@@ -8,6 +8,8 @@ import {
 import { useTheme } from '../../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import { updateStreak } from '../../utils/streakManager';
+import { updateTherapyCompletion } from '../../utils/therapyProgressManager';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ExposureExercise {
   id: string;
@@ -35,6 +37,7 @@ interface ExposureSession {
 
 function ExposureTherapyModule() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [selectedExercise, setSelectedExercise] = useState<ExposureExercise | null>(null);
   const [currentSession, setCurrentSession] = useState<Partial<ExposureSession>>({
     anxietyBefore: 5,
@@ -192,6 +195,11 @@ function ExposureTherapyModule() {
     
     // Update streak
     updateStreak();
+    
+    // Update therapy progress
+    if (user?.id) {
+      updateTherapyCompletion(user.id, 'exposure');
+    }
     
     // Dispatch custom event for real-time updates
     window.dispatchEvent(new CustomEvent('mindcare-data-updated'));

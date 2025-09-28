@@ -8,6 +8,8 @@ import {
 import { useTheme } from '../../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import { updateStreak } from '../../utils/streakManager';
+import { updateTherapyCompletion } from '../../utils/therapyProgressManager';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface VideoSession {
   id: string;
@@ -35,6 +37,7 @@ interface WatchProgress {
 
 function VideoTherapyModule() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [selectedVideo, setSelectedVideo] = useState<VideoSession | null>(null);
   const [videoSessions, setVideoSessions] = useState<VideoSession[]>([]);
@@ -219,6 +222,11 @@ function VideoTherapyModule() {
     
     // Update streak
     updateStreak();
+    
+    // Update therapy progress
+    if (user?.id) {
+      updateTherapyCompletion(user.id, 'video');
+    }
     
     // Dispatch custom event for real-time updates
     window.dispatchEvent(new CustomEvent('mindcare-data-updated'));

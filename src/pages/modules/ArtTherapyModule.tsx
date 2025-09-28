@@ -8,6 +8,8 @@ import {
 import { useTheme } from '../../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import { updateStreak } from '../../utils/streakManager';
+import { updateTherapyCompletion } from '../../utils/therapyProgressManager';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface DrawingTool {
   type: 'brush' | 'eraser' | 'shape';
@@ -28,6 +30,7 @@ interface ColoringPage {
 
 function ArtTherapyModule() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState<DrawingTool>({
@@ -215,6 +218,11 @@ function ArtTherapyModule() {
       
       // Update streak
       updateStreak();
+      
+      // Update therapy progress
+      if (user?.id) {
+        updateTherapyCompletion(user.id, 'art');
+      }
       
       // Dispatch custom event for real-time updates
       window.dispatchEvent(new CustomEvent('mindcare-data-updated'));

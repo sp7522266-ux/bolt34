@@ -16,6 +16,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import { updateStreak } from '../utils/streakManager';
+import { updateTherapyCompletion } from '../utils/therapyProgressManager';
 
 interface MoodEntry {
   id: string;
@@ -169,6 +170,11 @@ function MoodTrackerPage() {
     
     // Update streak
     updateStreak();
+    
+    // Update therapy progress
+    if (user?.id) {
+      updateTherapyCompletion(user.id, 'mood');
+    }
     
     // Update analytics data
     updateAnalyticsData(updatedEntries);

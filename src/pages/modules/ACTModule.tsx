@@ -4,6 +4,8 @@ import { Heart, Target, Compass, Mountain, Clover as River, Trees as Tree, Star,
 import { useTheme } from '../../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import { updateStreak } from '../../utils/streakManager';
+import { updateTherapyCompletion } from '../../utils/therapyProgressManager';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Value {
   id: string;
@@ -34,6 +36,7 @@ interface MindfulnessExercise {
 
 function ACTModule() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [selectedTab, setSelectedTab] = useState<'values' | 'mindfulness' | 'acceptance' | 'commitment'>('values');
   const [personalValues, setPersonalValues] = useState<Value[]>([]);
   const [selectedExercise, setSelectedExercise] = useState<ACTExercise | null>(null);
@@ -230,6 +233,11 @@ function ACTModule() {
     if (selectedExercise) {
       // Update streak
       updateStreak();
+      
+      // Update therapy progress
+      if (user?.id) {
+        updateTherapyCompletion(user.id, 'act');
+      }
       
       // Dispatch custom event for real-time updates
       window.dispatchEvent(new CustomEvent('mindcare-data-updated'));

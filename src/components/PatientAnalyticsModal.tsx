@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { useTheme } from '../contexts/ThemeContext';
 import toast from 'react-hot-toast';
+import { getPatientProgress } from '../utils/therapyProgressManager';
 
 interface PatientAnalyticsModalProps {
   patient: any;
@@ -48,6 +49,9 @@ function PatientAnalyticsModal({ patient, isOpen, onClose }: PatientAnalyticsMod
 
   const loadPatientData = () => {
     setLoading(true);
+    
+    // Load therapy progress from new system
+    const therapyProgress = getPatientProgress(patient.id);
     
     // Load all patient activity data from localStorage
     const moodEntries = JSON.parse(localStorage.getItem('mindcare_mood_entries') || '[]')
@@ -100,6 +104,12 @@ function PatientAnalyticsModal({ patient, isOpen, onClose }: PatientAnalyticsMod
       actValues,
       sleepLogs
     });
+    
+    // Add therapy progress data
+    setPatientData(prev => ({
+      ...prev,
+      therapyProgress: therapyProgress.modules
+    }));
     
     setLoading(false);
   };
@@ -715,18 +725,42 @@ function PatientAnalyticsModal({ patient, isOpen, onClose }: PatientAnalyticsMod
               <h3 className={`text-lg font-semibold mb-4 ${
                 theme === 'dark' ? 'text-white' : 'text-gray-800'
               }`}>
-                Therapy Module Progress
+                Therapy Module Progress (0/30 Sessions Each)
               </h3>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {patientData && [
-                  { name: 'Mood Tracking', count: patientData.moodEntries.length, target: 30, icon: Heart, color: 'from-pink-500 to-rose-500' },
-                  { name: 'CBT Journaling', count: patientData.cbtRecords.length, target: 20, icon: Brain, color: 'from-blue-500 to-cyan-500' },
-                  { name: 'Gratitude Practice', count: patientData.gratitudeEntries.length, target: 30, icon: Star, color: 'from-yellow-500 to-orange-500' },
-                  { name: 'Stress Management', count: patientData.stressLogs.length, target: 15, icon: Target, color: 'from-orange-500 to-red-500' },
-                  { name: 'Exposure Therapy', count: patientData.exposureSessions.length, target: 12, icon: Award, color: 'from-red-500 to-pink-500' },
-                  { name: 'Video Therapy', count: patientData.videoProgress.length, target: 16, icon: BarChart3, color: 'from-purple-500 to-pink-500' }
-                ].map((module, index) => {
-                  const progress = Math.min(100, (module.count / module.target) * 100);
+                {patientData?.therapyProgress && patientData.therapyProgress.map((module: any, index: number) => {
+                  const progress = Math.min(100, (module.completedSessions / module.totalSessions) * 100);
+                  const moduleIcons: any = {
+                    'CBT Journaling': Brain,
+                    'Mindfulness': Heart,
+                    'Stress Management': Target,
+                    'Gratitude Journal': Star,
+                    'Relaxation Music': BarChart3,
+                    'Tetris Therapy': Award,
+                    'Art Therapy': Heart,
+                    'Exposure Therapy': Target,
+                    'Video Therapy': BarChart3,
+                    'ACT': Brain,
+                    'Mood Tracking': Heart,
+                    'Sleep Therapy': BarChart3
+                  };
+                  const moduleColors: any = {
+                    'CBT Journaling': 'from-blue-500 to-cyan-500',
+                    'Mindfulness': 'from-purple-500 to-pink-500',
+                    'Stress Management': 'from-orange-500 to-red-500',
+                    'Gratitude Journal': 'from-yellow-500 to-orange-500',
+                    'Relaxation Music': 'from-green-500 to-teal-500',
+                    'Tetris Therapy': 'from-cyan-500 to-blue-500',
+                    'Art Therapy': 'from-pink-500 to-purple-500',
+                    'Exposure Therapy': 'from-red-500 to-pink-500',
+                    'Video Therapy': 'from-purple-500 to-pink-500',
+                    'ACT': 'from-teal-500 to-cyan-500',
+                    'Mood Tracking': 'from-pink-500 to-rose-500',
+                    'Sleep Therapy': 'from-indigo-500 to-purple-500'
+                  };
+                  const ModuleIcon = moduleIcons[module.name] || Heart;
+                  const moduleColor = moduleColors[module.name] || 'from-gray-500 to-gray-600';
+                  
                   return (
                     <motion.div
                       key={index}
@@ -739,8 +773,8 @@ function PatientAnalyticsModal({ patient, isOpen, onClose }: PatientAnalyticsMod
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center space-x-2">
-                          <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${module.color} flex items-center justify-center`}>
-                            <module.icon className="w-4 h-4 text-white" />
+                          <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${moduleColor} flex items-center justify-center`}>
+                            <ModuleIcon className="w-4 h-4 text-white" />
                           </div>
                           <h4 className={`font-medium ${
                             theme === 'dark' ? 'text-white' : 'text-gray-800'
@@ -751,14 +785,14 @@ function PatientAnalyticsModal({ patient, isOpen, onClose }: PatientAnalyticsMod
                         <span className={`text-sm ${
                           theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
                         }`}>
-                          {module.count}/{module.target}
+                          {module.completedSessions}/{module.totalSessions}
                         </span>
                       </div>
                       <div className={`w-full h-2 rounded-full ${
                         theme === 'dark' ? 'bg-gray-600' : 'bg-gray-200'
                       }`}>
                         <div
-                          className={`h-full rounded-full bg-gradient-to-r ${module.color} transition-all duration-500`}
+                          className={`h-full rounded-full bg-gradient-to-r ${moduleColor} transition-all duration-500`}
                           style={{ width: `${progress}%` }}
                         />
                       </div>
@@ -777,7 +811,7 @@ function PatientAnalyticsModal({ patient, isOpen, onClose }: PatientAnalyticsMod
                       </div>
                     </motion.div>
                   );
-                })}
+                }) || <p className="text-gray-500">No therapy progress data available</p>}
               </div>
             </motion.div>
 

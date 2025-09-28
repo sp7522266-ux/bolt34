@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { getTherapistProgressReports } from '../utils/therapyProgressManager';
 
 function TherapistDashboard() {
   const { user } = useAuth();
@@ -18,6 +19,7 @@ function TherapistDashboard() {
   const [totalPatients, setTotalPatients] = useState(0);
   const [weekSessions, setWeekSessions] = useState(0);
   const [monthlyRevenue, setMonthlyRevenue] = useState(0);
+  const [recentProgressUpdates, setRecentProgressUpdates] = useState<any[]>([]);
 
   useEffect(() => {
     // Load appointments from localStorage
@@ -109,25 +111,63 @@ function TherapistDashboard() {
       setRecentActivity(activities);
     };
 
+    const loadProgressUpdates = () => {
+      if (user?.id) {
+        const reports = getTherapistProgressReports(user.id);
+        const recentUpdates = reports
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          .slice(0, 3)
+          .map(report => ({
+            id: report.id,
+            patientName: report.patientName,
+            progress: report.summary.overallProgress,
+            completedSessions: report.summary.totalCompletedSessions,
+            time: getRelativeTime(report.timestamp)
+          }));
+        setRecentProgressUpdates(recentUpdates);
+      }
+    };
+
     loadAppointments();
+    loadProgressUpdates();
     
     // Set up interval to refresh appointments
-    const interval = setInterval(loadAppointments, 5000);
+    const interval = setInterval(() => {
+      loadAppointments();
+      loadProgressUpdates();
+    }, 5000);
     
     // Listen for storage changes
     const handleStorageChange = () => {
       loadAppointments();
+      loadProgressUpdates();
     };
     
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('mindcare-data-updated', handleStorageChange);
+    window.addEventListener('mindcare-patient-progress-update', handleStorageChange);
     
     return () => {
       clearInterval(interval);
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('mindcare-data-updated', handleStorageChange);
+      window.removeEventListener('mindcare-patient-progress-update', handleStorageChange);
     };
   }, [user]);
+
+  const getRelativeTime = (timestamp: string) => {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffMs = now.getTime() - time.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  };
 
   const stats = [
     {
@@ -433,6 +473,81 @@ function TherapistDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Recent Activity */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.0 }}
+          className={`p-4 rounded-xl shadow-lg ${
+            theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+          }`}
+        >
+          <h3 className={`text-lg font-semibold mb-4 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-800'
+          }`}>
+            Recent Activity & Patient Progress
+          </h3>
+          <div className="space-y-3">
+            {/* Recent Progress Updates */}
+            {recentProgressUpdates.map((update, index) => (
+              <motion.div
+                key={`progress-${update.id}`}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1.1 + index * 0.1 }}
+                className={`flex items-center space-x-3 p-3 rounded-lg ${
+                  theme === 'dark' ? 'bg-green-900/20 border border-green-800' : 'bg-green-50 border border-green-200'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-green-600" />
+                </div>
+                <div className="flex-1">
+                  <p className={`text-sm font-medium ${
+                    theme === 'dark' ? 'text-green-300' : 'text-green-700'
+                  }`}>
+                    {update.patientName} completed therapy session
+                  </p>
+                  <p className={`text-xs ${
+                    theme === 'dark' ? 'text-green-400' : 'text-green-600'
+                  }`}>
+                    Progress: {update.progress}% • {update.completedSessions} total sessions • {update.time}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+            
+            {/* Regular Activity */}
+            {recentActivity.slice(0, Math.max(1, 4 - recentProgressUpdates.length)).map((activity: any, index: number) => (
+              <motion.div
+                key={activity.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1.1 + recentProgressUpdates.length * 0.1 + index * 0.1 }}
+                className={`flex items-center space-x-3 p-3 rounded-lg ${
+                  theme === 'dark' ? 'bg-gray-700/50' : 'bg-gray-50'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <Calendar className="w-4 h-4 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <p className={`text-sm ${
+                    theme === 'dark' ? 'text-white' : 'text-gray-800'
+                  }`}>
+                    {activity.action}
+                  </p>
+                  <p className={`text-xs ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    {activity.patient} • {activity.time}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
 
         {/* Weekly Overview */}
         <motion.div

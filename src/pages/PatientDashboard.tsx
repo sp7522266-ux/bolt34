@@ -9,6 +9,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getStreakData } from '../utils/streakManager';
+import { getPatientProgress } from '../utils/therapyProgressManager';
 
 function PatientDashboard() {
   const { user } = useAuth();
@@ -24,13 +25,10 @@ function PatientDashboard() {
     const streakData = getStreakData();
     setStreak(streakData.currentStreak);
 
-
-    // Load modules completed count
-    const userProgress = localStorage.getItem('mindcare_user_progress');
-    if (userProgress) {
-      const progress = JSON.parse(userProgress);
-      const completedCount = progress.completedTherapies?.length || 0;
-      setModulesCompleted(completedCount);
+    // Load therapy progress from new system
+    if (user?.id) {
+      const therapyProgress = getPatientProgress(user.id);
+      setModulesCompleted(therapyProgress.totalCompletedSessions);
     }
     
     // Load upcoming appointments
@@ -66,13 +64,10 @@ function PatientDashboard() {
       const streakData = getStreakData();
       setStreak(streakData.currentStreak);
 
-
-      // Update modules completed
-      const userProgress = localStorage.getItem('mindcare_user_progress');
-      if (userProgress) {
-        const progress = JSON.parse(userProgress);
-        const completedCount = progress.completedTherapies?.length || 0;
-        setModulesCompleted(completedCount);
+      // Update therapy progress
+      if (user?.id) {
+        const therapyProgress = getPatientProgress(user.id);
+        setModulesCompleted(therapyProgress.totalCompletedSessions);
       }
 
       // Update appointments
@@ -105,10 +100,12 @@ function PatientDashboard() {
     
     // Also listen for custom events for same-tab updates
     window.addEventListener('mindcare-data-updated', handleStorageChange);
+    window.addEventListener('mindcare-therapy-progress-updated', handleStorageChange);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('mindcare-data-updated', handleStorageChange);
+      window.removeEventListener('mindcare-therapy-progress-updated', handleStorageChange);
     };
   }, [user]);
 

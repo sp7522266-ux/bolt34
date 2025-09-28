@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import PatientAnalyticsModal from '../components/PatientAnalyticsModal';
 import toast from 'react-hot-toast';
+import { getTherapistProgressReports } from '../utils/therapyProgressManager';
 
 interface Patient {
   id: string;
@@ -41,6 +42,7 @@ function PatientsPage() {
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [analyticsPatient, setAnalyticsPatient] = useState<Patient | null>(null);
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [progressReports, setProgressReports] = useState<any[]>([]);
 
   useEffect(() => {
     const loadPatients = () => {
@@ -112,7 +114,14 @@ function PatientsPage() {
       setPatients(Array.from(patientMap.values()));
     };
 
+    const loadProgressReports = () => {
+      if (user?.id) {
+        const reports = getTherapistProgressReports(user.id);
+        setProgressReports(reports);
+      }
+    };
     loadPatients();
+    loadProgressReports();
     
     // Set up interval to refresh data
     const interval = setInterval(loadPatients, 5000);
@@ -120,15 +129,21 @@ function PatientsPage() {
     // Listen for storage changes
     const handleStorageChange = () => {
       loadPatients();
+      loadProgressReports();
+      loadProgressReports();
     };
     
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('mindcare-data-updated', handleStorageChange);
+    window.addEventListener('mindcare-therapy-progress-updated', handleStorageChange);
+    window.addEventListener('mindcare-patient-progress-update', handleStorageChange);
     
     return () => {
       clearInterval(interval);
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('mindcare-data-updated', handleStorageChange);
+      window.removeEventListener('mindcare-therapy-progress-updated', handleStorageChange);
+      window.removeEventListener('mindcare-patient-progress-update', handleStorageChange);
     };
   }, [user]);
 
@@ -426,10 +441,14 @@ function PatientsPage() {
                   <button
                     onClick={() => handleViewPatient(patient)}
                     className="p-2 text-gray-500 hover:text-blue-600 transition-colors"
+                    title="View patient details"
                   >
                     <Eye className="w-4 h-4" />
                   </button>
-                  <button className="p-2 text-gray-500 hover:text-green-600 transition-colors">
+                  <button 
+                    className="p-2 text-gray-500 hover:text-green-600 transition-colors"
+                    title="Send message"
+                  >
                     <MessageSquare className="w-4 h-4" />
                   </button>
                   <button 
@@ -441,6 +460,21 @@ function PatientsPage() {
                   </button>
                 </div>
                 <div className="flex space-x-2">
+                  <button 
+                    onClick={() => {
+                      const patientReports = progressReports.filter(r => r.patientId === patient.id);
+                      if (patientReports.length > 0) {
+                        const latestReport = patientReports[patientReports.length - 1];
+                        toast.success(`Latest progress: ${latestReport.summary.overallProgress}% complete, ${latestReport.summary.totalCompletedSessions} sessions done`);
+                      } else {
+                        toast.info('No progress reports available for this patient yet');
+                      }
+                    }}
+                    className="p-2 text-gray-500 hover:text-indigo-600 transition-colors"
+                    title="View latest progress report"
+                  >
+                    <TrendingUp className="w-4 h-4" />
+                  </button>
                   <button 
                     onClick={() => handleDeletePatient(patient.id)}
                     className="p-2 text-gray-500 hover:text-red-600 transition-colors"

@@ -5,6 +5,8 @@ import { BookOpen, Brain, Target, CheckCircle, Plus, Save, ArrowLeft, Lightbulb,
 import { useTheme } from '../../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import { updateStreak } from '../../utils/streakManager';
+import { updateTherapyCompletion } from '../../utils/therapyProgressManager';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ThoughtRecord {
   id: string;
@@ -29,6 +31,7 @@ interface CognitiveDistortion {
 
 function CBTModule() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [currentRecord, setCurrentRecord] = useState<Partial<ThoughtRecord>>({
     date: new Date().toISOString().split('T')[0],
@@ -145,6 +148,11 @@ function CBTModule() {
     
     // Update streak
     updateStreak();
+    
+    // Update therapy progress
+    if (user?.id) {
+      updateTherapyCompletion(user.id, 'cbt');
+    }
     
     // Dispatch custom event for real-time updates
     window.dispatchEvent(new CustomEvent('mindcare-data-updated'));

@@ -13,6 +13,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getStreakData } from '../utils/streakManager';
+import { getPatientProgress, updateTherapyCompletion } from '../utils/therapyProgressManager';
 
 function ProgressPage() {
   const { user } = useAuth();
@@ -28,6 +29,7 @@ function ProgressPage() {
   const [averageSleepQuality, setAverageSleepQuality] = useState(7.5);
   const [totalTherapySessions, setTotalTherapySessions] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
+  const [therapyProgress, setTherapyProgress] = useState<any[]>([]);
 
   const achievements = [
     { 
@@ -84,6 +86,15 @@ function ProgressPage() {
 
   const loadProgressData = () => {
     if (!user?.id) return;
+
+    // Load therapy progress from new system
+    const patientProgress = getPatientProgress(user.id);
+    setTherapyProgress(patientProgress.modules.map(module => ({
+      module: module.name,
+      completed: module.completedSessions,
+      total: module.totalSessions,
+      progress: Math.round((module.completedSessions / module.totalSessions) * 100)
+    })));
 
     // Load user progress
     const savedProgress = localStorage.getItem('mindcare_user_progress');
@@ -156,10 +167,12 @@ function ProgressPage() {
     }
 
     // Load therapy progress from actual user activities
-    loadTherapyProgress();
+    // loadTherapyProgress(); // Replaced with new system above
 
     // Load weekly stats from real activity data
     loadWeeklyStats();
+    const patientProgress = getPatientProgress(user.id);
+    setTotalTherapySessions(patientProgress.totalCompletedSessions);
 
     // Update achievements based on real data
     updateAchievements();
@@ -192,113 +205,7 @@ function ProgressPage() {
     });
   };
 
-  const loadTherapyProgress = () => {
-    // Load actual therapy completion data
-    const cbtRecords = JSON.parse(localStorage.getItem('mindcare_cbt_records') || '[]');
-    const gratitudeEntries = JSON.parse(localStorage.getItem('mindcare_gratitude_entries') || '[]');
-    const moodEntries = JSON.parse(localStorage.getItem('mindcare_mood_entries') || '[]');
-    const exposureSessions = JSON.parse(localStorage.getItem('mindcare_exposure_sessions') || '[]');
-    const stressLogs = JSON.parse(localStorage.getItem('mindcare_stress_logs') || '[]');
-    const videoProgress = JSON.parse(localStorage.getItem('mindcare_video_progress') || '[]');
-    const actValues = JSON.parse(localStorage.getItem('mindcare_act_values') || '[]');
 
-    // Filter data for current user
-    const userCBT = cbtRecords.filter((r: any) => r.userId === user?.id || !r.userId);
-    const userGratitude = gratitudeEntries.filter((e: any) => e.userId === user?.id || !e.userId);
-    const userMood = moodEntries.filter((e: any) => e.userId === user?.id || !e.userId);
-    const userExposure = exposureSessions.filter((s: any) => s.userId === user?.id || !s.userId);
-    const userStress = stressLogs.filter((l: any) => l.userId === user?.id || !l.userId);
-    const userVideo = videoProgress.filter((p: any) => p.userId === user?.id || !p.userId);
-    const userACT = actValues.filter((v: any) => v.userId === user?.id || !v.userId);
-
-    // Calculate total therapy sessions from all activities
-    const totalActivities = userCBT.length + userGratitude.length + userExposure.length + userStress.length + 
-                           userVideo.length + userACT.length;
-    setTotalTherapySessions(totalActivities);
-
-    // Define therapy modules with realistic session targets
-    const therapyModules = [
-      { 
-        id: 'cbt', 
-        name: 'CBT Journaling', 
-        total: 20,
-        completed: userCBT.length,
-        description: 'Cognitive Behavioral Therapy thought records'
-      },
-      { 
-        id: 'mindfulness', 
-        name: 'Mindfulness', 
-        total: 15,
-        completed: Math.floor(userMood.length * 0.3), // Estimate from mood tracking mindfulness
-        description: 'Mindfulness and breathing exercises'
-      },
-      { 
-        id: 'stress', 
-        name: 'Stress Management', 
-        total: 12,
-        completed: userStress.length,
-        description: 'Stress reduction and coping strategies'
-      },
-      { 
-        id: 'gratitude', 
-        name: 'Gratitude Journal', 
-        total: 30,
-        completed: userGratitude.length,
-        description: 'Daily gratitude practice'
-      },
-      { 
-        id: 'music', 
-        name: 'Relaxation Music', 
-        total: 10,
-        completed: Math.floor(totalActivities * 0.1), // Estimate
-        description: 'Therapeutic music sessions'
-      },
-      { 
-        id: 'tetris', 
-        name: 'Tetris Therapy', 
-        total: 8,
-        completed: Math.floor(totalActivities * 0.05), // Estimate
-        description: 'Gamified stress relief'
-      },
-      { 
-        id: 'art', 
-        name: 'Art Therapy', 
-        total: 10,
-        completed: Math.floor(totalActivities * 0.08), // Estimate
-        description: 'Creative expression therapy'
-      },
-      { 
-        id: 'exposure', 
-        name: 'Exposure Therapy', 
-        total: 12,
-        completed: userExposure.length,
-        description: 'Gradual exposure techniques'
-      },
-      { 
-        id: 'video', 
-        name: 'Video Therapy', 
-        total: 16,
-        completed: userVideo.length,
-        description: 'Professional video sessions'
-      },
-      { 
-        id: 'act', 
-        name: 'ACT', 
-        total: 14,
-        completed: userACT.length,
-        description: 'Acceptance and Commitment Therapy'
-      }
-    ];
-
-    const therapyProgressData = therapyModules.map(module => ({
-      module: module.name,
-      completed: Math.min(module.completed, module.total),
-      total: module.total,
-      progress: Math.round((Math.min(module.completed, module.total) / module.total) * 100)
-    }));
-    
-    setTherapyProgress(therapyProgressData);
-  };
 
   const loadWeeklyStats = () => {
     const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];

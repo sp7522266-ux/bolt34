@@ -8,6 +8,8 @@ import {
 import { useTheme } from '../../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import { updateStreak } from '../../utils/streakManager';
+import { updateTherapyCompletion } from '../../utils/therapyProgressManager';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface GratitudeEntry {
   id: string;
@@ -26,6 +28,7 @@ interface GratitudePrompt {
 
 function GratitudeModule() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [currentEntries, setCurrentEntries] = useState<string[]>(['', '', '']);
   const [selectedMood, setSelectedMood] = useState<number>(5);
   const [selectedCategory, setSelectedCategory] = useState<string>('general');
@@ -97,6 +100,11 @@ function GratitudeModule() {
     
     // Update streak
     updateStreak();
+    
+    // Update therapy progress
+    if (user?.id) {
+      updateTherapyCompletion(user.id, 'gratitude');
+    }
     
     // Dispatch custom event for real-time updates
     window.dispatchEvent(new CustomEvent('mindcare-data-updated'));

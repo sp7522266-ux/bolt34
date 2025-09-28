@@ -9,6 +9,8 @@ import {
 import { useTheme } from '../../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import { updateStreak } from '../../utils/streakManager';
+import { updateTherapyCompletion } from '../../utils/therapyProgressManager';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface BreathingSession {
   id: string;
@@ -23,6 +25,7 @@ interface BreathingSession {
 
 function MindfulnessModule() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [currentSession, setCurrentSession] = useState<BreathingSession | null>(null);
   const [isActive, setIsActive] = useState(false);
@@ -154,6 +157,11 @@ function MindfulnessModule() {
     
     // Update streak
     updateStreak();
+    
+    // Update therapy progress
+    if (user?.id) {
+      updateTherapyCompletion(user.id, 'mindfulness');
+    }
     
     // Dispatch custom event for real-time updates
     window.dispatchEvent(new CustomEvent('mindcare-data-updated'));

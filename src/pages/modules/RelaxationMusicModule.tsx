@@ -9,6 +9,8 @@ import {
 import { useTheme } from '../../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import { updateStreak } from '../../utils/streakManager';
+import { updateTherapyCompletion } from '../../utils/therapyProgressManager';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Track {
   id: string;
@@ -32,6 +34,7 @@ interface Playlist {
 
 function RelaxationMusicModule() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [musicTracks, setMusicTracks] = useState<any[]>([]);
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -237,6 +240,11 @@ function RelaxationMusicModule() {
     
     // Update streak for starting a relaxation session
     updateStreak();
+    
+    // Update therapy progress
+    if (user?.id) {
+      updateTherapyCompletion(user.id, 'music');
+    }
     
     // Dispatch custom event for real-time updates
     window.dispatchEvent(new CustomEvent('mindcare-data-updated'));
@@ -709,6 +717,11 @@ function RelaxationMusicModule() {
                onClick={() => {
                  // Update streak for completing a relaxation session
                  updateStreak();
+                 
+                 // Update therapy progress
+                 if (user?.id) {
+                   updateTherapyCompletion(user.id, 'music');
+                 }
                  
                  // Dispatch custom event for real-time updates
                  window.dispatchEvent(new CustomEvent('mindcare-data-updated'));

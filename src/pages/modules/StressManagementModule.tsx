@@ -8,6 +8,8 @@ import {
 import { useTheme } from '../../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import { updateStreak } from '../../utils/streakManager';
+import { updateTherapyCompletion } from '../../utils/therapyProgressManager';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface StressLog {
   id: string;
@@ -32,6 +34,7 @@ interface StressReliefTechnique {
 
 function StressManagementModule() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [currentStressLevel, setCurrentStressLevel] = useState(5);
   const [selectedTechnique, setSelectedTechnique] = useState<StressReliefTechnique | null>(null);
   const [isSessionActive, setIsSessionActive] = useState(false);
@@ -185,6 +188,12 @@ function StressManagementModule() {
   const completeTechnique = () => {
     if (selectedTechnique) {
       setIsSessionActive(false);
+      
+      // Update therapy progress when technique is completed
+      if (user?.id) {
+        updateTherapyCompletion(user.id, 'stress');
+      }
+      
       toast.success(`${selectedTechnique.name} completed! How do you feel?`);
       setSelectedTechnique(null);
       setSessionTime(0);
@@ -213,6 +222,11 @@ function StressManagementModule() {
     
     // Update streak
     updateStreak();
+    
+    // Update therapy progress
+    if (user?.id) {
+      updateTherapyCompletion(user.id, 'stress');
+    }
     
     // Dispatch custom event for real-time updates
     window.dispatchEvent(new CustomEvent('mindcare-data-updated'));

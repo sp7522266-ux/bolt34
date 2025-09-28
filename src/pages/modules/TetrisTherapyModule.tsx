@@ -7,6 +7,8 @@ import {
 import { useTheme } from '../../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import { updateStreak } from '../../utils/streakManager';
+import { updateTherapyCompletion } from '../../utils/therapyProgressManager';
+import { useAuth } from '../../contexts/AuthContext';
 
 type TetrominoType = 'I' | 'O' | 'T' | 'S' | 'Z' | 'J' | 'L';
 type GameState = 'menu' | 'playing' | 'paused' | 'gameOver';
@@ -47,6 +49,7 @@ const SHAPES = {
 
 function TetrisTherapyModule() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [gameState, setGameState] = useState<GameState>('menu');
   const [board, setBoard] = useState<string[][]>(() => 
     Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(''))
@@ -166,6 +169,11 @@ function TetrisTherapyModule() {
     
     // Update streak
     updateStreak();
+    
+    // Update therapy progress
+    if (user?.id) {
+      updateTherapyCompletion(user.id, 'tetris');
+    }
     
     // Dispatch custom event for real-time updates
     window.dispatchEvent(new CustomEvent('mindcare-data-updated'));

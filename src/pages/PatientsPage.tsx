@@ -4,7 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import { 
   User, Search, Filter, Plus, Eye, MessageSquare, 
   Calendar, BarChart3, Heart, Clock, Star, Phone,
-  Mail, MapPin, Trash2, AlertTriangle
+  Mail, MapPin, Trash2, AlertTriangle, TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';

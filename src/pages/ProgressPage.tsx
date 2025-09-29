@@ -29,7 +29,6 @@ function ProgressPage() {
   const [averageSleepQuality, setAverageSleepQuality] = useState(7.5);
   const [totalTherapySessions, setTotalTherapySessions] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
-  const [therapyProgress, setTherapyProgress] = useState<any[]>([]);
 
   const achievements = [
     { 

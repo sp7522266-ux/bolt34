@@ -86,9 +86,9 @@ function ProgressPage() {
   const loadProgressData = () => {
     if (!user?.id) return;
 
-    // Load therapy progress from new system
-    const patientProgress = getPatientProgress(user.id);
-    setTherapyProgress(patientProgress.modules.map(module => ({
+    // Load therapy progress from new system - single declaration
+    const patientProgressData = getPatientProgress(user.id);
+    setTherapyProgress(patientProgressData.modules.map(module => ({
       module: module.name,
       completed: module.completedSessions,
       total: module.totalSessions,
@@ -170,8 +170,7 @@ function ProgressPage() {
 
     // Load weekly stats from real activity data
     loadWeeklyStats();
-    const patientProgress = getPatientProgress(user.id);
-    setTotalTherapySessions(patientProgress.totalCompletedSessions);
+    setTotalTherapySessions(patientProgressData.totalCompletedSessions);
 
     // Update achievements based on real data
     updateAchievements();

@@ -88,12 +88,15 @@ function ProgressPage() {
 
     // Load therapy progress from new system - single declaration
     const patientProgressData = getPatientProgress(user.id);
-    setTherapyProgress(patientProgressData.modules.map(module => ({
+    
+    // Set therapy progress with proper data structure
+    const progressData = patientProgressData.modules.map(module => ({
       module: module.name,
       completed: module.completedSessions,
       total: module.totalSessions,
       progress: Math.round((module.completedSessions / module.totalSessions) * 100)
-    })));
+    }));
+    setTherapyProgress(progressData);
 
     // Load user progress
     const savedProgress = localStorage.getItem('mindcare_user_progress');
@@ -171,7 +174,6 @@ function ProgressPage() {
     // Load weekly stats from real activity data
     loadWeeklyStats();
     setTotalTherapySessions(patientProgressData.totalCompletedSessions);
-
     // Update achievements based on real data
     updateAchievements();
   };
